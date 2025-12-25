@@ -260,7 +260,7 @@ function New-AgentFile {
     $parent = Split-Path -Parent $TargetFile
     if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent | Out-Null }
     Set-Content -LiteralPath $TargetFile -Value $content -NoNewline -Encoding utf8
-    Remove-Item $temp -Force
+    # Remove-Item $temp -Force
     return $true
 }
 

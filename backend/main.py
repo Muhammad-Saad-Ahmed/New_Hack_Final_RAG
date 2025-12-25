@@ -4,24 +4,41 @@ import uuid
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import cohere
 import qdrant_client
 from qdrant_client.http import models
 
 # --- CONFIGURATION ---
+# Load environment variables from .env file
+# This ensures that API keys and other configurations are loaded securely.
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 TARGET_SITEMAP_URL = "https://new-hack-final-rag-kvxh.vercel.app/sitemap.xml"
 COLLECTION_NAME = "New-Rag-Data"
 
 # Initialize Clients
+# The Cohere client is used to generate embeddings for text.
 co = cohere.Client(os.getenv("COHERE_API_KEY"))
-qdrant_client = qdrant_client.QdrantClient(
+# The Qdrant client connects to the vector database where document embeddings are stored.
+qdrant_db_client = qdrant_client.QdrantClient(
     url=os.getenv("QDRANT_URL"), 
     api_key=os.getenv("QDRANT_API_KEY")
 )
 
-# --- FUNCTIONS ---
+# --- FastAPI App Initialization ---
+app = FastAPI()
 
+# --- Pydantic Models ---
+class IngestionSummary(BaseModel):
+    """Summary of the data ingestion process."""
+    total_urls_found: int
+    processed_urls: int
+    total_text_chunks_created: int
+    total_embeddings_generated: int
+    message: str
+
+# --- FUNCTIONS (from existing ingestion pipeline) ---
 def get_all_urls(sitemap_url: str) -> list[str]:
     """Fetches and parses a sitemap to extract all URLs."""
     print(f"Fetching URLs from {sitemap_url}...")
@@ -89,7 +106,7 @@ def embed_chunks(chunks: list[str]) -> list[list[float]]:
             input_type='search_document'
         )
         return response.embeddings
-    except cohere.errors.CohereAPIError as e:
+    except cohere.CohereAPIError as e: # Corrected error class
         print(f"    Cohere API error: {e}")
         return []
 
@@ -97,7 +114,7 @@ def create_collection(collection_name: str):
     """Creates a Qdrant collection if it doesn't exist."""
     print(f"Checking/Creating Qdrant collection '{collection_name}'...")
     try:
-        qdrant_client.recreate_collection(
+        qdrant_db_client.recreate_collection(
             collection_name=collection_name,
             vectors_config=models.VectorParams(size=1024, distance=models.Distance.COSINE)
         )
@@ -126,12 +143,69 @@ def save_chunks_to_qdrant(collection_name: str, chunks: list[str], embeddings: l
         ))
 
     if points:
-        qdrant_client.upsert(collection_name=collection_name, points=points, wait=True)
+        qdrant_db_client.upsert(collection_name=collection_name, points=points, wait=True)
         print("    Successfully saved chunks.")
 
+# Import retrieval functions
+from .retrieving import retrieve_chunks # Adjusted import for relative path
 
-def main():
-    """Main function to run the ingestion pipeline."""
+# --- FastAPI App Initialization ---
+app = FastAPI()
+
+# --- Pydantic Models ---
+class IngestionSummary(BaseModel):
+    """Summary of the data ingestion process."""
+    total_urls_found: int
+    processed_urls: int
+    total_text_chunks_created: int
+    total_embeddings_generated: int
+    message: str
+
+class QueryRequest(BaseModel):
+    """Request model for a search query."""
+    query: str
+    top_k: int = 5 # Default to 5 relevant results
+
+class RetrievedChunk(BaseModel):
+    """Represents a single retrieved chunk of information."""
+    id: str
+    score: float
+    payload: dict # Assuming payload can be any dictionary, refine if specific keys are always present
+
+class RetrievalResponse(BaseModel):
+    """Response model for retrieval results."""
+    query: str
+    results: list[RetrievedChunk]
+    total_results: int
+
+# --- API Endpoints ---
+@app.get("/")
+async def read_root():
+    return {"message": "RAG FastAPI is running!"}
+
+@app.post("/retrieve", response_model=RetrievalResponse)
+async def retrieve(request: QueryRequest):
+    """
+    Retrieves relevant information from the Qdrant database based on a user query.
+    """
+    print(f"Retrieving for query: '{request.query}' with top_k: {request.top_k}")
+    retrieved_data = retrieve_chunks(request.query, co, qdrant_db_client, top_k=request.top_k)
+    
+    # Convert retrieved_data to Pydantic models
+    formatted_results = [RetrievedChunk(**chunk) for chunk in retrieved_data]
+
+    return RetrievalResponse(
+        query=request.query,
+        results=formatted_results,
+        total_results=len(formatted_results)
+    )
+
+@app.post("/ingest", response_model=IngestionSummary)
+async def ingest_data():
+    """
+    Triggers the RAG ingestion pipeline to fetch data from the sitemap,
+    extract text, chunk it, embed it, and save to Qdrant.
+    """
     print("--- Starting RAG Ingestion Pipeline ---")
     
     # 1. Create Qdrant collection
@@ -141,8 +215,7 @@ def main():
     urls = get_all_urls(TARGET_SITEMAP_URL)
     url_count = len(urls)
     if not urls:
-        print("No URLs found. Exiting.")
-        return
+        raise HTTPException(status_code=500, detail="No URLs found from sitemap for ingestion.")
 
     total_chunks = 0
     total_embeddings = 0
@@ -172,13 +245,19 @@ def main():
         save_chunks_to_qdrant(COLLECTION_NAME, text_chunks, embeddings, url, page_title)
 
     print("--- RAG Ingestion Pipeline Finished ---")
+    summary_message = "All data has been embedded and saved into the '{COLLECTION_NAME}' vector database."
     print("\n--- Summary ---")
     print(f"Total URLs found: {url_count}")
     print(f"Processed URLs: {processed_urls}")
     print(f"Total text chunks created: {total_chunks}")
     print(f"Total embeddings generated: {total_embeddings}")
-    print(f"All data has been embedded and saved into the '{COLLECTION_NAME}' vector database.")
+    print(summary_message)
     print("---------------")
 
-if __name__ == "__main__":
-    main()
+    return IngestionSummary(
+        total_urls_found=url_count,
+        processed_urls=processed_urls,
+        total_text_chunks_created=total_chunks,
+        total_embeddings_generated=total_embeddings,
+        message=summary_message
+    )
