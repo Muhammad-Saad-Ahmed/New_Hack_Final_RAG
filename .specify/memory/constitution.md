@@ -1,55 +1,77 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+- Version change: none → 1.0.0
+- List of modified principles:
+  - Principle 1: Technical Accuracy
+  - Principle 2: Hands-on Learning
+  - Principle 3: Clear, Structured Teaching
+  - Principle 4: Consistent Python/ROS 2 Examples
+  - Principle 5: Separation of Concerns
+  - Principle 6: MDX-Ready Content
+  - Principle 7: Spec-Kit Plus Workflow
+  - Principle 8: Defined Tech Stack
+  - Principle 9: Standardized Lesson Structure
+- Added sections:
+  - Constraints
+  - Success Criteria
+- Removed sections: None
+- Templates requiring updates:
+  - ✅ .specify/templates/plan-template.md
+  - ✅ .specify/templates/spec-template.md
+  - ✅ .specify/templates/tasks-template.md
+- Follow-up TODOs: None
+-->
+
+# Physical AI & Humanoid Robotics — Textbook + RAG Chatbot Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Technical Accuracy
+All content must be technically accurate and reflect the best practices for ROS 2, Gazebo, Unity, NVIDIA Isaac, and VLA systems.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Hands-on Learning
+The textbook must prioritize hands-on learning through practical labs and code demonstrations.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Clear, Structured Teaching
+Content must be organized logically into Modules, Chapters, and Lessons to facilitate a clear learning path.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Consistent Python/ROS 2 Examples
+All code examples must be written in Python and use ROS 2, ensuring consistency throughout the textbook.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Separation of Concerns
+The book's content and the chatbot's logic must remain strictly separate. No chatbot code should be included within the textbook chapters.
 
-### [PRINCIPLE_6_NAME]
+### VI. MDX-Ready Content
+All output must be in valid MDX format, ready for use with Docusaurus.
 
+### VII. Spec-Kit Plus Workflow
+Development must follow the Spec-Kit Plus workflow: Constitution → Spec → Plan → Tasks → Implement.
 
-[PRINCIPLE__DESCRIPTION]
+### VIII. Defined Tech Stack
+The RAG system will be built using FastAPI, Neon Postgres, Qdrant Cloud, and OpenAI Agents/ChatKit.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### IX. Standardized Lesson Structure
+Each lesson must include learning goals, a clear explanation, code examples, and a hands-on lab.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+## Constraints
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+- The textbook will consist of exactly four modules:
+  1.  ROS 2 — Robotic Nervous System
+  2.  Gazebo & Unity — Digital Twin
+  3.  NVIDIA Isaac — AI-Robot Brain
+  4.  VLA — Vision-Language-Action Robotics
+- No chatbot code is to be embedded within the textbook chapters.
+- All content must be authored in valid MDX for Docusaurus.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Success Criteria
+
+- A complete textbook is produced, including all specified modules, chapters, and lessons.
+- The Docusaurus site builds successfully and is deployable to GitHub Pages.
+- The RAG chatbot answers user questions using only the text from the book.
+- A student can successfully complete the final humanoid robot capstone project using the knowledge from the book.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This Constitution is the single source of truth for project principles and governance. All development activities, reviews, and artifacts must align with it. Amendments require a documented proposal, review, and an approved migration plan. All team members are responsible for upholding these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-12-07 | **Last Amended**: 2025-12-07
