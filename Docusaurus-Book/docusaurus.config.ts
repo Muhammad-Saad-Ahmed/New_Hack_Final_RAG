@@ -23,7 +23,7 @@ const config: Config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'Muhammad-Saad-Ahmed', // Usually your GitHub org/user name.
-  projectName: 'Hackathon-1_Physical-AI_Humanoid_Book', // Usually your repo name.
+  projectName: 'New_Hack_Final_RAG', // Usually your repo name.
 
   onBrokenLinks: 'throw',
 
@@ -44,7 +44,7 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/Muhammad-Saad-Ahmed/Hackathon-1_Physical-AI_Humanoid_Book/tree/main/',
+            'https://github.com/Muhammad-Saad-Ahmed/New_Hack_Final_RAG/tree/main/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -73,7 +73,7 @@ const config: Config = {
               label: 'Tutorial',
             },
             {
-              href: 'https://github.com/Muhammad-Saad-Ahmed/Hackathon-1_Physical-AI_Humanoid_Book',
+              href: 'https://github.com/Muhammad-Saad-Ahmed/New_Hack_Final_RAG',
               label: 'GitHub',
               position: 'right',
             },
@@ -96,7 +96,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/Muhammad-Saad-Ahmed/Hackathon-1_Physical-AI_Humanoid_Book',
+              href: 'https://github.com/Muhammad-Saad-Ahmed/New_Hack_Final_RAG',
             },
           ],
         },
