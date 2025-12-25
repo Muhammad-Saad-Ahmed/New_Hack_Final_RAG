@@ -8,7 +8,7 @@ import cohere
 import qdrant_client
 
 # --- CONFIGURATION ---
-load_dotenv()
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 TARGET_SITEMAP_URL = "https://new-hack-final-rag-kvxh.vercel.app/sitemap.xml"
 COLLECTION_NAME = "RAG-DATA"
 

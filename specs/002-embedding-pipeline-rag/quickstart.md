@@ -43,10 +43,10 @@ uv pip install -r requirements.txt
 
 ### d. Configure Environment Variables
 
-The script requires API keys for Cohere and Qdrant. Create a `.env` file in the `backend` directory and add the following:
+The script requires API keys for Cohere and Qdrant. Create a .env file in the **root directory** of the project and add the following:
 
 ```env
-# .env file
+# .env file (located in the project root directory)
 
 # Cohere API Key
 COHERE_API_KEY="your_cohere_api_key_here"
