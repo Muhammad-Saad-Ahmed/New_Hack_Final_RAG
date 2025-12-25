@@ -1,0 +1,123 @@
+# API Contract: RAG Retrieval Service
+
+## Overview
+This document defines the API contract for the RAG retrieval service that queries Qdrant vector database and returns relevant text chunks.
+
+## Endpoints
+
+### POST /retrieve
+Retrieve relevant text chunks based on a text query.
+
+#### Request
+- **Method**: POST
+- **Path**: `/retrieve`
+- **Content-Type**: `application/json`
+
+##### Request Body
+```json
+{
+  "query": "string, the search query text",
+  "top_k": "integer, optional, number of results to return (default: 5)",
+  "collection_name": "string, optional, name of the Qdrant collection (default: 'RAG-DATA')"
+}
+```
+
+##### Example Request
+```json
+{
+  "query": "What is ROS2?",
+  "top_k": 3
+}
+```
+
+#### Response
+- **Success Response**: `200 OK`
+- **Content-Type**: `application/json`
+
+##### Response Body
+```json
+{
+  "query": "string, the original query text",
+  "results": [
+    {
+      "id": "string, unique identifier for the chunk",
+      "score": "number, similarity score",
+      "text": "string, the retrieved text chunk",
+      "metadata": {
+        "source_url": "string, URL of the original document",
+        "chunk_id": "string, identifier for the specific chunk",
+        "page_title": "string, title of the original page"
+      }
+    }
+  ],
+  "total_results": "integer, total number of results returned"
+}
+```
+
+##### Example Response
+```json
+{
+  "query": "What is ROS2?",
+  "results": [
+    {
+      "id": "chunk-abc123",
+      "score": 0.85,
+      "text": "ROS2 (Robot Operating System 2) is a set of libraries and tools...",
+      "metadata": {
+        "source_url": "https://example.com/ros2-intro",
+        "chunk_id": "chunk-xyz789",
+        "page_title": "Introduction to ROS2"
+      }
+    }
+  ],
+  "total_results": 1
+}
+```
+
+#### Error Responses
+- **400 Bad Request**: Invalid request parameters
+- **500 Internal Server Error**: Service or Qdrant unavailable
+
+### GET /health
+Check the health status of the retrieval service.
+
+#### Request
+- **Method**: GET
+- **Path**: `/health`
+
+#### Response
+- **Success Response**: `200 OK`
+- **Content-Type**: `application/json`
+
+##### Response Body
+```json
+{
+  "status": "ok",
+  "service": "rag-retrieval",
+  "dependencies": {
+    "qdrant": "connected",
+    "cohere": "connected"
+  }
+}
+```
+
+## Data Models
+
+### QueryRequest
+- **query**: string (required) - The search query text
+- **top_k**: integer (optional, default: 5) - Number of results to return
+- **collection_name**: string (optional, default: 'RAG-DATA') - Name of the Qdrant collection
+
+### SearchResult
+- **id**: string (required) - Unique identifier for the chunk
+- **score**: number (required) - Similarity score between 0 and 1
+- **text**: string (required) - The retrieved text chunk
+- **metadata**: object (required) - Additional information about the chunk
+  - **source_url**: string (required) - URL of the original document
+  - **chunk_id**: string (required) - Identifier for the specific chunk
+  - **page_title**: string (required) - Title of the original page
+
+### RetrieveResponse
+- **query**: string (required) - The original query text
+- **results**: array[SearchResult] (required) - Array of search results
+- **total_results**: integer (required) - Total number of results returned

@@ -6,11 +6,12 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import cohere
 import qdrant_client
+from qdrant_client.http import models
 
 # --- CONFIGURATION ---
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
 TARGET_SITEMAP_URL = "https://new-hack-final-rag-kvxh.vercel.app/sitemap.xml"
-COLLECTION_NAME = "RAG-DATA"
+COLLECTION_NAME = "New-Rag-Data"
 
 # Initialize Clients
 co = cohere.Client(os.getenv("COHERE_API_KEY"))
@@ -98,7 +99,7 @@ def create_collection(collection_name: str):
     try:
         qdrant_client.recreate_collection(
             collection_name=collection_name,
-            vectors_config=qdrant_client.http.models.VectorParams(size=1024, distance=qdrant_client.http.models.Distance.COSINE)
+            vectors_config=models.VectorParams(size=1024, distance=models.Distance.COSINE)
         )
         print("  Collection created successfully.")
     except Exception as e:
@@ -113,7 +114,7 @@ def save_chunks_to_qdrant(collection_name: str, chunks: list[str], embeddings: l
     print(f"    Saving {len(chunks)} chunks to Qdrant...")
     points = []
     for chunk, embedding in zip(chunks, embeddings):
-        points.append(qdrant_client.http.models.PointStruct(
+        points.append(models.PointStruct(
             id=str(uuid.uuid4()),
             vector=embedding,
             payload={
@@ -123,7 +124,7 @@ def save_chunks_to_qdrant(collection_name: str, chunks: list[str], embeddings: l
                 "section_title": "" # Placeholder - more advanced parsing needed for this
             }
         ))
-    
+
     if points:
         qdrant_client.upsert(collection_name=collection_name, points=points, wait=True)
         print("    Successfully saved chunks.")
@@ -138,9 +139,14 @@ def main():
     
     # 2. Get all URLs from the sitemap
     urls = get_all_urls(TARGET_SITEMAP_URL)
+    url_count = len(urls)
     if not urls:
         print("No URLs found. Exiting.")
         return
+
+    total_chunks = 0
+    total_embeddings = 0
+    processed_urls = 0
 
     # 3. Process each URL
     for url in urls:
@@ -148,17 +154,31 @@ def main():
         if not full_text:
             continue
         
+        processed_urls += 1
         text_chunks = chunk_text(full_text)
         if not text_chunks:
             continue
+        
+        num_chunks = len(text_chunks)
+        total_chunks += num_chunks
 
         embeddings = embed_chunks(text_chunks)
         if not embeddings:
             continue
+        
+        num_embeddings = len(embeddings)
+        total_embeddings += num_embeddings
 
         save_chunks_to_qdrant(COLLECTION_NAME, text_chunks, embeddings, url, page_title)
 
     print("--- RAG Ingestion Pipeline Finished ---")
+    print("\n--- Summary ---")
+    print(f"Total URLs found: {url_count}")
+    print(f"Processed URLs: {processed_urls}")
+    print(f"Total text chunks created: {total_chunks}")
+    print(f"Total embeddings generated: {total_embeddings}")
+    print(f"All data has been embedded and saved into the '{COLLECTION_NAME}' vector database.")
+    print("---------------")
 
 if __name__ == "__main__":
     main()

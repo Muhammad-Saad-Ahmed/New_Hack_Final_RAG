@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Json \"Retrieval + pipeline testing for RAG ingestion\n\nGoal: Verify that stored vectors in Qdrant can be retrieved accurately.\n\nSuccess criteria:\n- Query Qdrant and receive correct top-k matches\n- Retrieved chunks match original text\n- Metadata \\(url, chunk_id\\) returns correctly\n- End-to-end test: input query → Qdrant response → clean JSON output\" -Number 3 -ShortName \"rag-retrieval-testing\")",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(dir \"C:\\\\Users\\\\Admin\\\\Downloads\\\\Spec-Driven-Development\\\\New_Hackathon\\\\New folder\\\\New_Hack_Final_RAG\\\\specs\\\\003-rag-retrieval-testing\\\\checklists\")",
+      "Bash(ls -la backend/.env*)",
+      "Bash(python backend/retrieving.py \"What is ROS2?\")",
+      "Bash(python backend/main.py)"
+    ]
+  }
+}
