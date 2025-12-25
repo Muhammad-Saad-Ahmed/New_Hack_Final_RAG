@@ -1,0 +1,164 @@
+import os
+import re
+import uuid
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+import cohere
+import qdrant_client
+
+# --- CONFIGURATION ---
+load_dotenv()
+TARGET_SITEMAP_URL = "https://new-hack-final-rag-kvxh.vercel.app/sitemap.xml"
+COLLECTION_NAME = "RAG-DATA"
+
+# Initialize Clients
+co = cohere.Client(os.getenv("COHERE_API_KEY"))
+qdrant_client = qdrant_client.QdrantClient(
+    url=os.getenv("QDRANT_URL"), 
+    api_key=os.getenv("QDRANT_API_KEY")
+)
+
+# --- FUNCTIONS ---
+
+def get_all_urls(sitemap_url: str) -> list[str]:
+    """Fetches and parses a sitemap to extract all URLs."""
+    print(f"Fetching URLs from {sitemap_url}...")
+    urls = []
+    try:
+        response = requests.get(sitemap_url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'lxml-xml')
+        locs = soup.find_all('loc')
+        urls = [loc.text for loc in locs]
+        print(f"Found {len(urls)} URLs.")
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching sitemap: {e}")
+    return urls
+
+def extract_text_from_url(url: str) -> tuple[str, str]:
+    """Extracts the main text content and title from a URL."""
+    print(f"  Extracting text from {url}...")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Docusaurus-specific selectors - may need adjustment for other sites
+        main_content = soup.find('main') or soup.find('article')
+        if not main_content:
+            return "", ""
+
+        # Remove irrelevant elements
+        for element in main_content.find_all(['nav', 'footer', 'aside', 'script', 'style']):
+            element.decompose()
+        
+        text = main_content.get_text(separator=' ', strip=True)
+        title = soup.title.string if soup.title else "No Title"
+        
+        # Clean up excessive whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return text, title
+    except requests.exceptions.RequestException as e:
+        print(f"    Error fetching URL {url}: {e}")
+        return "", ""
+
+def chunk_text(text: str, chunk_size: int = 512, overlap: int = 64) -> list[str]:
+    """Splits text into fixed-size chunks with overlap."""
+    if not text:
+        return []
+    # Using a simple token approximation (split by space)
+    tokens = text.split()
+    chunks = []
+    for i in range(0, len(tokens), chunk_size - overlap):
+        chunk = " ".join(tokens[i:i + chunk_size])
+        chunks.append(chunk)
+    return chunks
+
+def embed_chunks(chunks: list[str]) -> list[list[float]]:
+    """Generates embeddings for a list of text chunks using Cohere."""
+    if not chunks:
+        return []
+    print(f"    Generating {len(chunks)} embeddings...")
+    try:
+        response = co.embed(
+            texts=chunks,
+            model='embed-english-v3.0',
+            input_type='search_document'
+        )
+        return response.embeddings
+    except cohere.errors.CohereAPIError as e:
+        print(f"    Cohere API error: {e}")
+        return []
+
+def create_collection(collection_name: str):
+    """Creates a Qdrant collection if it doesn't exist."""
+    print(f"Checking/Creating Qdrant collection '{collection_name}'...")
+    try:
+        qdrant_client.recreate_collection(
+            collection_name=collection_name,
+            vectors_config=qdrant_client.http.models.VectorParams(size=1024, distance=qdrant_client.http.models.Distance.COSINE)
+        )
+        print("  Collection created successfully.")
+    except Exception as e:
+        # A more robust check would be to get collection info and handle specific errors
+        print(f"  Collection likely already exists. Error: {e}")
+
+
+def save_chunks_to_qdrant(collection_name: str, chunks: list[str], embeddings: list[list[float]], source_url: str, page_title: str):
+    """Saves text chunks and their embeddings to Qdrant."""
+    if not chunks or not embeddings:
+        return
+    print(f"    Saving {len(chunks)} chunks to Qdrant...")
+    points = []
+    for chunk, embedding in zip(chunks, embeddings):
+        points.append(qdrant_client.http.models.PointStruct(
+            id=str(uuid.uuid4()),
+            vector=embedding,
+            payload={
+                "text": chunk,
+                "source_url": source_url,
+                "page_title": page_title,
+                "section_title": "" # Placeholder - more advanced parsing needed for this
+            }
+        ))
+    
+    if points:
+        qdrant_client.upsert(collection_name=collection_name, points=points, wait=True)
+        print("    Successfully saved chunks.")
+
+
+def main():
+    """Main function to run the ingestion pipeline."""
+    print("--- Starting RAG Ingestion Pipeline ---")
+    
+    # 1. Create Qdrant collection
+    create_collection(COLLECTION_NAME)
+    
+    # 2. Get all URLs from the sitemap
+    urls = get_all_urls(TARGET_SITEMAP_URL)
+    if not urls:
+        print("No URLs found. Exiting.")
+        return
+
+    # 3. Process each URL
+    for url in urls:
+        full_text, page_title = extract_text_from_url(url)
+        if not full_text:
+            continue
+        
+        text_chunks = chunk_text(full_text)
+        if not text_chunks:
+            continue
+
+        embeddings = embed_chunks(text_chunks)
+        if not embeddings:
+            continue
+
+        save_chunks_to_qdrant(COLLECTION_NAME, text_chunks, embeddings, url, page_title)
+
+    print("--- RAG Ingestion Pipeline Finished ---")
+
+if __name__ == "__main__":
+    main()
