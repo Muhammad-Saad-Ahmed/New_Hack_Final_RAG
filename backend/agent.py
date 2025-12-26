@@ -14,36 +14,45 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env')) # New l
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower()
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_BASEURL = os.getenv("LLM_BASEURL")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash-latest")
 
 # Validate required configuration
 if not LLM_API_KEY:
     raise ValueError("LLM_API_KEY environment variable is not set. Please add it to your .env file.")
 
-# Set up API key and base URL based on provider
+# Set up API key, base URL, and headers based on provider
+api_key = LLM_API_KEY
+base_url = LLM_BASEURL
+headers = {}
+
 if LLM_PROVIDER == "gemini":
-    api_key = os.getenv("GEMINI_API_KEY") or LLM_API_KEY
-    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    # Use the specific Gemini endpoint if no base URL is provided
+    base_url = LLM_BASEURL or "https://generativelanguage.googleapis.com/v1beta/openai/"
     headers = {
         "x-goog-api-key": api_key,
         "x-goog-api-client": "agents-library"
-    } if api_key else {}
+    }
 elif LLM_PROVIDER == "openrouter":
-    api_key = os.getenv("OPENROUTER_API_KEY") or LLM_API_KEY
-    base_url = "https://openrouter.ai/api/v1"
-    headers = {"HTTP-Referer": "https://your-app-url.com", "X-Title": "Your App Name"}  # Optional but recommended
+    # OpenRouter uses the API key in the Authorization header
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "HTTP-Referer": "https://github.com/leeway-press/spec-driven-development", 
+        "X-Title": "Spec-Driven Development"
+    }
 elif LLM_PROVIDER == "qwen":
-    api_key = os.getenv("QWEN_API_KEY") or LLM_API_KEY
-    base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # Qwen compatible OpenAI endpoint
-    headers = {}
+    # Qwen uses the API key in the Authorization header
+    base_url = LLM_BASEURL or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    headers = {"Authorization": f"Bearer {api_key}"}
 else:
     raise ValueError(f"Unsupported LLM provider: {LLM_PROVIDER}. Supported providers: gemini, openrouter, qwen")
 
-# Use provided values if specific provider keys are not set
-if not api_key:
-    api_key = LLM_API_KEY
+# Final validation for base_url
 if not base_url:
-    base_url = LLM_BASEURL or "https://generativelanguage.googleapis.com/v1beta/openai/"
+    raise ValueError("LLM_BASEURL is not set for the selected provider and no default is available.")
+
+print(f"Using LLM Provider: {LLM_PROVIDER}")
+print(f"Using LLM Model: {LLM_MODEL}")
+print(f"Using Base URL: {base_url}")
 
 # Create the external client with dynamic configuration
 external_client = AsyncOpenAI(

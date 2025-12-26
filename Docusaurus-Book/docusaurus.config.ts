@@ -74,7 +74,7 @@ const config: Config = {
             },
             {
               type: 'doc',
-              docId: '04-rag-agent/index',
+              docId: 'rag-agent/index',
               position: 'left',
               label: 'RAG Agent',
             },

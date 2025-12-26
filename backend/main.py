@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="cohere.core.pydantic_utilities")
+
 import os
 import re
 import uuid
