@@ -58,7 +58,7 @@ external_model=OpenAIChatCompletionsModel(
 
 
 
-FASTAPI_RETRIEVE_URL = "http://127.0.0.1:8001/retrieve"
+FASTAPI_RETRIEVE_URL = "http://127.0.0.1:8000/retrieve"
 
 @function_tool
 def retrieve_from_fastapi_tool(query: str, top_k: int = 3) -> str:

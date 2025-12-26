@@ -1,3 +1,12 @@
+--- 
+title: RAG Agent
+---
+
+# RAG Agent
+
+This document outlines the implementation of the RAG (Retrieval-Augmented Generation) agent, which leverages FastAPI for its API endpoints and integrates with Cohere for embeddings and Qdrant for vector database operations.
+
+```python
 import os
 import re
 import uuid
@@ -147,7 +156,7 @@ def save_chunks_to_qdrant(collection_name: str, chunks: list[str], embeddings: l
         print("    Successfully saved chunks.")
 
 # Import retrieval functions
-from retrieving import retrieve_chunks # Adjusted import for absolute path
+from .retrieving import retrieve_chunks # Adjusted import for relative path
 
 # --- FastAPI App Initialization ---
 app = FastAPI()
@@ -261,3 +270,4 @@ async def ingest_data():
         total_embeddings_generated=total_embeddings,
         message=summary_message
     )
+```
