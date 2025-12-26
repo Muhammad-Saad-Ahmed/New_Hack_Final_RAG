@@ -13,7 +13,7 @@ from qdrant_client.http import models
 # --- CONFIGURATION ---
 # Load environment variables from .env file
 # This ensures that API keys and other configurations are loaded securely.
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../.env'))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 TARGET_SITEMAP_URL = "https://new-hack-final-rag-kvxh.vercel.app/sitemap.xml"
 COLLECTION_NAME = "New-Rag-Data"
 
