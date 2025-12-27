@@ -4,6 +4,7 @@ import ChatSource from './Source';
 import './RagChat.css';
 
 const RagChat = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const [chatState, setChatState] = useState<ChatState>({
     messages: [],
     sources: [],
@@ -49,12 +50,29 @@ const RagChat = () => {
     }
   };
 
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+  };
+
+  if (!isOpen) {
+    return (
+      <button className="rag-chat-toggle-button" onClick={toggleChat}>
+        🤖
+      </button>
+    );
+  }
+
   return (
     <div className="rag-chat-widget">
+      <div className="chat-header">
+        <h3>AI Assistant</h3>
+        <button onClick={toggleChat} className="close-button">✕</button>
+      </div>
       <div className="chat-window">
         <div className="messages">
           {chatState.messages.map((msg, index) => (
             <div key={index} className={`message ${msg.type}`}>
+              <span className="message-icon">{msg.type === 'bot' ? '🤖' : '👤'}</span>
               {msg.text}
             </div>
           ))}
@@ -77,7 +95,7 @@ const RagChat = () => {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask a question..."
           />
-          <button onClick={handleSend}>Send</button>
+          <button onClick={handleSend}>➤</button>
         </div>
       </div>
     </div>
