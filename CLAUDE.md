@@ -3,6 +3,8 @@
 Auto-generated from all feature plans. Last updated: 2025-12-25
 
 ## Active Technologies
+- Python 3.11, JavaScript/TypeScript for frontend + FastAPI (backend), Docusaurus (frontend), Qdrant Client, Cohere (001-rag-agent-ui-integration)
+- N/A (uses Qdrant vector database via API) (001-rag-agent-ui-integration)
 
 - Python 3.11 + Cohere, Qdrant Client, FastAPI, Pydantic, Requests, BeautifulSoup (003-rag-retrieval-testing)
 
@@ -23,6 +25,7 @@ cd src; pytest; ruff check .
 Python 3.11: Follow standard conventions
 
 ## Recent Changes
+- 001-rag-agent-ui-integration: Added Python 3.11, JavaScript/TypeScript for frontend + FastAPI (backend), Docusaurus (frontend), Qdrant Client, Cohere
 
 - 003-rag-retrieval-testing: Added Python 3.11 + Cohere, Qdrant Client, FastAPI, Pydantic, Requests, BeautifulSoup
 

@@ -73,12 +73,6 @@ const config: Config = {
               label: 'Tutorial',
             },
             {
-              type: 'doc',
-              docId: 'rag-agent/index',
-              position: 'left',
-              label: 'RAG Agent',
-            },
-            {
               href: 'https://github.com/Muhammad-Saad-Ahmed/New_Hack_Final_RAG',
               label: 'GitHub',
               position: 'right',

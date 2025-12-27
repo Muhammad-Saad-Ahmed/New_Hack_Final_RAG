@@ -7,7 +7,18 @@
       "Bash(dir \"C:\\\\Users\\\\Admin\\\\Downloads\\\\Spec-Driven-Development\\\\New_Hackathon\\\\New folder\\\\New_Hack_Final_RAG\\\\specs\\\\003-rag-retrieval-testing\\\\checklists\")",
       "Bash(ls -la backend/.env*)",
       "Bash(python backend/retrieving.py \"What is ROS2?\")",
-      "Bash(python backend/main.py)"
+      "Bash(python backend/main.py)",
+      "Bash(git branch -d 005-integrate-rag-agent-ui)",
+      "Bash(uvicorn main:app --host 0.0.0.0 --port 8000)",
+      "Bash(python -c \"from main import app; print\\(''App loaded successfully''\\)\")",
+      "Bash(taskkill /f /im python.exe)",
+      "Bash(git fetch --all --prune)",
+      "Bash(ls -1d specs/*-rag-agent-ui-integration)",
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Json \"  Integrate backend RAG Agent with frontend UI\n\n  Goal: Connect the FastAPI Agent to the Docusaurus site so users can ask questions and receive RAG answers.\n\n  Success criteria:\n  - Frontend calls backend /ask endpoint successfully\n  - Displays answer, sources, and matched text chunks in UI\n  - Handles loading states, errors, and empty responses\n  - Local development works end-to-end\n\n  Constraints:\n  - No redesign of entire UI\n  - Keep API requests minimal + clean\n  - Only implement connection, not new backend logic\" -Json -Number 1 -ShortName \"rag-agent-ui-integration\" \"Integrate backend RAG Agent with frontend UI\")",
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Number 1 -ShortName \"rag-agent-ui-integration\" -Json \"  Integrate backend RAG Agent with frontend UI\n\n  Goal: Connect the FastAPI Agent to the Docusaurus site so users can ask questions and receive RAG answers.\n\n  Success criteria:\n  - Frontend calls backend /ask endpoint successfully\n  - Displays answer, sources, and matched text chunks in UI\n  - Handles loading states, errors, and empty responses\n  - Local development works end-to-end\n\n  Constraints:\n  - No redesign of entire UI\n  - Keep API requests minimal + clean\n  - Only implement connection, not new backend logic\")",
+      "Bash(.specify/scripts/bash/create-phr.sh --title \"rag-agent-ui-integration\" --stage \"spec\" --feature \"rag-agent-ui-integration\" --json)",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "Bash(.specify/scripts/powershell/update-agent-context.ps1 -AgentType claude)"
     ]
   }
 }

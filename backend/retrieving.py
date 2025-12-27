@@ -1,139 +1,268 @@
-"""
-This script provides retrieval functionality for a RAG (Retrieval-Augmented Generation) system.
-It takes a user query, generates an embedding for it using Cohere, searches a Qdrant vector database
-for semantically similar content, and returns the most relevant results.
-
-It also includes a content accuracy test to verify the quality of embeddings and similarity calculations.
-"""
-
-import numpy as np
 import os
-import sys
 import json
-import logging # Import the logging module
+from typing import List, Dict, Any
 import cohere
-import qdrant_client
-from typing import List, Dict, Any # Added for retrieve_chunks function
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
+import logging
+from dotenv import load_dotenv
+import time
 
-# Configure basic logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Load environment variables
+load_dotenv()
 
-# Define the Qdrant collection name. This should match the collection used in the ingestion pipeline.
-COLLECTION_NAME = "New-Rag-Data" 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_query_embedding(query: str, cohere_client: cohere.Client) -> list[float] | None:
-    """
-    Generates an embedding for the given query using the Cohere API.
+class RAGRetriever:
+    def __init__(self):
+        # Initialize Cohere client
+        self.cohere_client = cohere.Client(api_key=os.getenv("COHERE_API_KEY"))
 
-    Args:
-        query (str): The text query for which to generate an embedding.
+        # Initialize Qdrant client
+        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
 
-    Returns:
-        list[float] | None: A list of floats representing the embedding vector, or None if an error occurs.
-    """
-    if not query:
-        logging.warning("Attempted to generate embedding for an empty query.")
-        return None
-    try:
-        # Use 'embed-english-v3.0' model and 'search_query' input type for optimal retrieval.
-        response = cohere_client.embed(
-            texts=[query],
-            model='embed-english-v3.0',
-            input_type='search_query'
-        )
-        logging.info("Successfully generated embedding for query.")
-        return response.embeddings[0]
-    except cohere.CohereAPIError as e:
-        logging.error(f"Cohere API error during embedding generation: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"An unexpected error occurred during embedding generation: {e}")
-        return None
-
-
-def search_qdrant(embedding: list[float], qdrant_client_instance: qdrant_client.QdrantClient, collection_name: str = COLLECTION_NAME, top_k: int = 5) -> List[Any] | None:
-    """
-    Searches the Qdrant collection for the most similar vectors to the given query embedding.
-
-    Args:
-        embedding (list[float]): The embedding vector of the search query.
-        collection_name (str): The name of the Qdrant collection to search.
-        top_k (int): The number of top similar results to retrieve.
-
-    Returns:
-        list | None: A list of search results (PointStructs) from Qdrant, or None if an error occurs.
-    """
-    if not embedding:
-        logging.warning("Attempted to search Qdrant with an empty embedding.")
-        return None
-    try:
-        logging.info(f"Searching Qdrant collection '{collection_name}' for top {top_k} results.")
-        search_results = qdrant_client_instance.query_points(
-            collection_name=collection_name,
-            query=embedding,
-            limit=top_k,
-            with_payload=True # Ensure payload (original text, metadata) is returned
-        )
-        if search_results and hasattr(search_results, 'points'):
-            logging.info(f"Found {len(search_results.points)} results in Qdrant.")
-            return search_results.points
+        if qdrant_api_key:
+            self.qdrant_client = QdrantClient(url=qdrant_url, api_key=qdrant_api_key)
         else:
-            logging.info("No results or invalid response structure from Qdrant search.")
+            self.qdrant_client = QdrantClient(url=qdrant_url)
+
+        # Default collection name
+        self.collection_name = "New-Rag-Data"
+
+    def get_embedding(self, text: str) -> List[float]:
+        """
+        Generate embedding for query text using Cohere
+        """
+        try:
+            response = self.cohere_client.embed(
+                texts=[text],
+                model="embed-multilingual-v3.0",  # Using same model as storage
+                input_type="search_query"  # Optimize for search queries
+            )
+            return response.embeddings[0]  # Return the first (and only) embedding
+        except Exception as e:
+            logger.error(f"Error generating embedding for query: {e}")
             return []
+
+    def query_qdrant(self, query_embedding: List[float], top_k: int = 5, threshold: float = 0.0) -> List[Dict]:
+        """
+        Query Qdrant for similar vectors and return results with metadata
+        """
+        try:
+            # Perform similarity search in Qdrant
+            search_results = self.qdrant_client.query_points(
+                collection_name=self.collection_name,
+                query=query_embedding,
+                limit=top_k,
+                score_threshold=threshold,
+                with_payload=True  # Include metadata with results
+            )
+
+            # Format results
+            formatted_results = []
+            if hasattr(search_results, 'points'):
+                for result in search_results.points:
+                    formatted_result = {
+                        "content": result.payload.get("content", ""),
+                        "url": result.payload.get("url", ""),
+                        "position": result.payload.get("position", 0),
+                        "similarity_score": result.score,
+                        "chunk_id": result.id,
+                        "created_at": result.payload.get("created_at", "")
+                    }
+                    formatted_results.append(formatted_result)
+
+            return formatted_results
+
+        except Exception as e:
+            logger.error(f"Error querying Qdrant: {e}")
+            return []
+
+    def verify_content_accuracy(self, retrieved_chunks: List[Dict]) -> bool:
+        """
+        Verify that retrieved content matches original stored text (basic validation)
+        """
+        # In a real implementation, this would compare against original sources
+        # For now, we'll validate that required fields exist and have content
+        for chunk in retrieved_chunks:
+            if not chunk.get("content") or not chunk.get("url"):
+                logger.warning(f"Missing content or URL in chunk: {chunk.get('chunk_id')}")
+                return False
+
+        # Additional validation could include checking content length, URL format, etc.
+        return True
+
+    def format_json_response(self, results: List[Dict], query: str, query_time_ms: float) -> str:
+        """
+        Format retrieval results into clean JSON response
+        """
+        response = {
+            "query": query,
+            "results": results,
+            "metadata": {
+                "query_time_ms": query_time_ms,
+                "total_results": len(results),
+                "timestamp": time.time(),
+                "collection_name": self.collection_name
+            }
+        }
+
+        return json.dumps(response, indent=2)
+
+    def retrieve(self, query_text: str, top_k: int = 5, threshold: float = 0.0, include_metadata: bool = True) -> str:
+        """
+        Main retrieval function that orchestrates the complete workflow
+        """
+        start_time = time.time()
+
+        logger.info(f"Processing retrieval request for query: '{query_text[:50]}...'")
+
+        # Step 1: Convert query text to embedding
+        query_embedding = self.get_embedding(query_text)
+        if not query_embedding:
+            error_response = {
+                "query": query_text,
+                "results": [],
+                "error": "Failed to generate query embedding",
+                "metadata": {
+                    "query_time_ms": (time.time() - start_time) * 1000,
+                    "timestamp": time.time()
+                }
+            }
+            return json.dumps(error_response, indent=2)
+
+        # Step 2: Query Qdrant for similar vectors
+        raw_results = self.query_qdrant(query_embedding, top_k, threshold)
+
+        if not raw_results:
+            logger.warning("No results returned from Qdrant")
+
+        # Step 3: Verify content accuracy (optional)
+        if include_metadata:
+            is_accurate = self.verify_content_accuracy(raw_results)
+            if not is_accurate:
+                logger.warning("Content accuracy verification failed for some results")
+
+        # Step 4: Calculate total query time
+        query_time_ms = (time.time() - start_time) * 1000
+
+        # Step 5: Format response as JSON
+        json_response = self.format_json_response(raw_results, query_text, query_time_ms)
+
+        logger.info(f"Retrieval completed in {query_time_ms:.2f}ms, {len(raw_results)} results returned")
+
+        return json_response
+
+def retrieve_all_data():
+    """
+    Function to retrieve and display all data from Qdrant collection
+    """
+    logger.info("Initializing RAG Retriever to fetch all data...")
+
+    # Initialize the retriever
+    retriever = RAGRetriever()
+
+    print("RAG Retrieval System - All Stored Data")
+    print("=" * 50)
+
+    try:
+        # Get all points from the collection using scroll
+        points = []
+        offset = None
+        while True:
+            # Scroll through the collection to get all points
+            batch, next_offset = retriever.qdrant_client.scroll(
+                collection_name=retriever.collection_name,
+                limit=1000,  # Get up to 1000 points at a time
+                offset=offset,
+                with_payload=True,
+                with_vectors=False
+            )
+
+            points.extend(batch)
+
+            # If next_offset is None, we've reached the end
+            if next_offset is None:
+                break
+
+            offset = next_offset
+
+        print(f"Total stored chunks: {len(points)}")
+        print("-" * 50)
+
+        for i, point in enumerate(points, 1):
+            payload = point.payload
+            content_preview = ''.join(char for char in payload.get("content", "")[:200] if ord(char) < 256)
+
+            print(f"Chunk {i}:")
+            print(f"  ID: {point.id}")
+            print(f"  URL: {payload.get('url', 'N/A')}")
+            print(f"  Position: {payload.get('position', 'N/A')}")
+            print(f"  Content Preview: {content_preview}...")
+            print(f"  Created At: {payload.get('created_at', 'N/A')}")
+            print("-" * 30)
+
     except Exception as e:
-        logging.error(f"Qdrant search error: {e}")
-        return None
+        logger.error(f"Error retrieving all data: {e}")
+        print(f"Error retrieving all data: {e}")
 
 
-def format_results(search_results: list) -> list[dict]:
+def main():
     """
-    Formats the raw Qdrant search results into a clean, human-readable JSON object.
-
-    Args:
-        search_results (list): A list of raw search results (PointStructs) from Qdrant.
-
-    Returns:
-        list[dict]: A list of dictionaries, each representing a formatted search result
-                    with 'id', 'score', and 'payload' (which contains original text and metadata).
+    Main function to demonstrate the retrieval functionality
     """
-    if not search_results:
-        logging.info("No search results to format.")
-        return []
+    import sys
 
-    formatted_results = []
-    for result in search_results:
-        formatted_results.append({
-            "id": str(result.id), # Convert UUID to string for JSON serialization
-            "score": result.score,
-            "payload": result.payload
-        })
-    logging.debug(f"Formatted {len(formatted_results)} search results.")
-    return formatted_results
+    logger.info("Initializing RAG Retriever...")
 
+    # Check if user wants to retrieve all data or run queries
+    if len(sys.argv) > 1 and sys.argv[1] == "all":
+        retrieve_all_data()
+        return
 
-def retrieve_chunks(query: str, cohere_client: cohere.Client, qdrant_client_instance: qdrant_client.QdrantClient, top_k: int = 5) -> List[Dict[str, Any]]:
-    """
-    Generates embedding for the query, searches Qdrant, and formats the top_k results.
+    # Initialize the retriever
+    retriever = RAGRetriever()
 
-    Args:
-        query (str): The user's query string.
-        top_k (int): The number of top relevant documents to retrieve.
+    # Example queries to test the system
+    test_queries = [
+        "What is ROS2?",
+        "Explain humanoid design principles",
+        "How does VLA work?",
+        "What are simulation techniques?",
+        "Explain AI control systems"
+    ]
 
-    Returns:
-        List[Dict[str, Any]]: A list of dictionaries, where each dictionary
-                               represents a retrieved chunk with 'id', 'score',
-                               and 'payload' (containing 'text' and other metadata).
-                               Returns an empty list if no results are found or an error occurs.
-    """
-    embedding = get_query_embedding(query, cohere_client)
-    if not embedding:
-        logging.error("Failed to generate embedding for query in retrieve_chunks.")
-        return []
+    print("RAG Retrieval System - Testing Queries")
+    print("=" * 50)
 
-    search_results = search_qdrant(embedding, qdrant_client_instance, top_k=top_k)
-    if not search_results:
-        logging.info("No search results found in retrieve_chunks.")
-        return []
+    for i, query in enumerate(test_queries, 1):
+        print(f"\nQuery {i}: {query}")
+        print("-" * 30)
 
-    formatted_results = format_results(search_results)
-    return formatted_results
+        # Retrieve results
+        json_response = retriever.retrieve(query, top_k=3)
+        response_dict = json.loads(json_response)
+
+        # Print formatted results
+        results = response_dict.get("results", [])
+        if results:
+            for j, result in enumerate(results, 1):
+                print(f"Result {j} (Score: {result['similarity_score']:.3f}):")
+                print(f"  URL: {result['url']}")
+                content_preview = result['content'][:100].encode('utf-8', errors='ignore').decode('utf-8')
+                # Safely print content preview by removing problematic characters
+                safe_content = ''.join(char for char in content_preview if ord(char) < 256)
+                print(f"  Content Preview: {safe_content}...")
+                print(f"  Position: {result['position']}")
+                print()
+        else:
+            print("No results found for this query.")
+
+        print(f"Query time: {response_dict['metadata']['query_time_ms']:.2f}ms")
+        print(f"Total results: {response_dict['metadata']['total_results']}")
+
+if __name__ == "__main__":
+    main()

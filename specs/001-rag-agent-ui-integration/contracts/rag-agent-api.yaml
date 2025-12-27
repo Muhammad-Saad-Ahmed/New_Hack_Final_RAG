@@ -1,0 +1,86 @@
+openapi: 3.0.0
+info:
+  title: RAG Agent API
+  description: API for RAG (Retrieval Augmented Generation) agent that answers questions based on documentation
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+paths:
+  /ask:
+    post:
+      summary: Ask a question to the RAG agent
+      description: Submit a question to the RAG agent and receive an answer with sources and text chunks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - question
+              properties:
+                question:
+                  type: string
+                  description: The question to ask the RAG agent
+                  example: "What is ROS2?"
+      responses:
+        '200':
+          description: Successful response with answer, sources, and text chunks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                    description: The RAG-generated answer to the question
+                    example: "ROS2 (Robot Operating System 2) is a flexible framework for writing robot applications..."
+                  sources:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "source-1"
+                        url:
+                          type: string
+                          example: "https://docs.ros.org/en/rolling/Concepts.html"
+                        title:
+                          type: string
+                          example: "ROS 2 Concepts"
+                  text_chunks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "chunk-1"
+                        content:
+                          type: string
+                          example: "ROS 2 is a set of software libraries and tools that help you build robot applications..."
+                        source_id:
+                          type: string
+                          example: "source-1"
+        '400':
+          description: Bad request - invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Question cannot be empty"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error occurred"

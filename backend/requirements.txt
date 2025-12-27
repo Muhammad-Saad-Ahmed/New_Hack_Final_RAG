@@ -7,3 +7,4 @@ python-dotenv
 uv
 openai
 openai-agents
+httpx
