@@ -14,39 +14,46 @@ const RagChat = () => {
   const [input, setInput] = useState('');
 
   const handleSend = async () => {
-    if (input.trim() !== '') {
-      const newMessages: Message[] = [...chatState.messages, { type: 'user', text: input }];
-      setChatState({ ...chatState, messages: newMessages, isLoading: true, error: null });
-      setInput('');
+    if (input.trim() === '') return;
 
-      try {
-        const response = await fetch('http://localhost:8000/ask', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ question: input }),
-        });
+    const currentInput = input;
+    setInput('');
 
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+    setChatState(prevState => ({
+      ...prevState,
+      messages: [...prevState.messages, { type: 'user', text: currentInput }],
+      isLoading: true,
+      error: null,
+    }));
 
-        const data = await response.json();
-        const botMessage: Message = { type: 'bot', text: data.answer };
-        setChatState((prevState) => ({
-          ...prevState,
-          messages: [...prevState.messages, botMessage],
-          sources: data.sources || [],
-          isLoading: false,
-        }));
-      } catch (error) {
-        setChatState((prevState) => ({
-          ...prevState,
-          error: 'Failed to get an answer.',
-          isLoading: false,
-        }));
+    try {
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ question: currentInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
       }
+
+      const data = await response.json();
+      const botMessage: Message = { type: 'bot', text: data.answer };
+
+      setChatState(prevState => ({
+        ...prevState,
+        messages: [...prevState.messages, botMessage],
+        sources: data.sources || [],
+        isLoading: false,
+      }));
+    } catch (error) {
+      setChatState(prevState => ({
+        ...prevState,
+        error: 'Failed to get an answer.',
+        isLoading: false,
+      }));
     }
   };
 
@@ -73,7 +80,10 @@ const RagChat = () => {
           {chatState.messages.map((msg, index) => (
             <div key={index} className={`message ${msg.type}`}>
               <span className="message-icon">{msg.type === 'bot' ? '🤖' : '👤'}</span>
-              {msg.text}
+              <div className="text-content">
+                <div className="message-author">{msg.type === 'bot' ? 'RAGbot' : 'User'}</div>
+                {msg.text}
+              </div>
             </div>
           ))}
           {chatState.isLoading && <div className="message bot">Loading...</div>}

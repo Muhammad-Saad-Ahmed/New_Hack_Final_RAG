@@ -5,12 +5,12 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: #0084ff;
-  color: white;
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary-contrast-foreground);
   font-size: 24px;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); /* Neon glow effect */
   z-index: 1000;
   display: flex;
   justify-content: center;
@@ -21,13 +21,14 @@
   position: fixed;
   bottom: 90px;
   right: 20px;
-  width: 370px;
+  width: 400px; /* Changed from 75vw to 400px */
   max-width: 90vw;
   height: 500px;
   max-height: 80vh;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  background-color: var(--ifm-background-color);
+  border: 1px solid rgba(0, 240, 255, 0.2); /* Neon border */
+  border-radius: var(--ifm-border-radius-lg);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1); /* Neon glow */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -40,13 +41,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
-  background-color: #f7f7f7;
-  border-bottom: 1px solid #eee;
+  background-color: var(--ifm-color-emphasis-100);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
 }
 
 .chat-header h3 {
   margin: 0;
   font-size: 1.1em;
+  color: var(--ifm-color-content);
 }
 
 .close-button {
@@ -54,7 +56,7 @@
   border: none;
   font-size: 20px;
   cursor: pointer;
-  color: #888;
+  color: var(--ifm-color-content-secondary);
 }
 
 .chat-window {
@@ -74,11 +76,12 @@
 
 .message {
   display: flex;
-  align-items: center;
   gap: 10px;
   padding: 8px 12px;
   border-radius: 18px;
   max-width: 85%;
+  font-size: 0.95em;
+  line-height: 1.4;
 }
 
 .message-icon {
@@ -86,21 +89,39 @@
 }
 
 .message.user {
-  background-color: #0084ff;
-  color: white;
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary-contrast-foreground);
   align-self: flex-end;
-  flex-direction: row-reverse;
 }
 
 .message.bot {
-  background-color: #f0f0f0;
-  color: black;
+  background-color: var(--ifm-color-emphasis-200);
+  color: var(--ifm-color-content);
   align-self: flex-start;
 }
 
+.message-author {
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+}
+
+.user .message-author {
+  color: var(--ifm-color-primary-contrast-foreground);
+}
+
+.bot .message-author {
+  color: var(--ifm-color-content);
+}
+
+.message .text-content {
+  display: flex;
+  flex-direction: column;
+}
+
 .message.error {
-  background-color: #ffdddd;
-  color: #d8000c;
+  background-color: var(--ifm-color-danger-background);
+  color: var(--ifm-color-danger-foreground);
   align-self: stretch;
   text-align: center;
 }
@@ -108,20 +129,29 @@
 .input-area {
   display: flex;
   padding: 15px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 240, 255, 0.2); /* Neon border */
+  background-color: var(--ifm-color-emphasis-100);
 }
 
 .input-area input {
   flex-grow: 1;
-  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 240, 255, 0.3); /* Neon border for input */
   border-radius: 18px;
   padding: 10px 15px;
   margin-right: 10px;
+  background-color: var(--ifm-background-color);
+  color: var(--ifm-color-content);
+}
+
+.input-area input:focus {
+  outline: none;
+  border-color: var(--ifm-link-color); /* Neon focus effect */
+  box-shadow: 0 0 8px var(--ifm-link-color);
 }
 
 .input-area button {
-  background-color: #0084ff;
-  color: white;
+  background-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary-contrast-foreground);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -131,17 +161,24 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.input-area button:hover {
+  background-color: var(--ifm-link-color); /* Neon hover effect */
+  box-shadow: 0 0 10px var(--ifm-link-color);
 }
 
 .sources {
   margin-top: 10px;
   padding: 10px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
 }
 
 .sources h3 {
   margin: 0 0 10px 0;
   font-size: 1em;
+  color: var(--ifm-color-content);
 }
 
 .source {
@@ -149,13 +186,13 @@
 }
 
 .source a {
-  color: #0084ff;
+  color: var(--ifm-color-primary);
   text-decoration: none;
 }
 
 .source p {
   font-size: 0.9em;
-  color: #555;
+  color: var(--ifm-color-content-secondary);
   margin: 5px 0 0 0;
   white-space: pre-wrap;
 }
