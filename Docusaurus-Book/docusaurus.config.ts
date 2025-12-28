@@ -34,12 +34,6 @@ const config: Config = {
   },
 
   plugins: [
-    [
-      require.resolve('docusaurus-plugin-search-local'),
-      {
-        hashed: true,
-      },
-    ],
   ],
 
   presets: [
